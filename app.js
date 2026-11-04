@@ -16,13 +16,11 @@
     blocked: "ไปต่อไม่ได้กลางทาง เช่น ระบบค้าง ขึ้นข้อผิดพลาด หรือข้อมูลที่ต้องใช้ยังไม่พร้อม ให้ข้ามไปข้อถัดไป",
     not_assigned: "ขั้นนี้ของ Golden Thread มีผู้อื่นในบทบาทเดียวกันเป็นผู้ทำ"
   };
-  var PHOTO_WARNING = "ถ่ายเฉพาะจุดที่ผิดพลาด ห้ามถ่ายรหัสผ่าน เลขผู้เสียภาษี ข้อมูลบัญชีธนาคาร หรือบุคคล";
   var ICONS = {
     ok: '<path d="M5 12l4 4 10-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
     fail: '<path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
     blocked: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M6 6l12 12" stroke="currentColor" stroke-width="2.5"/>',
-    not_assigned: '<path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
-    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/>'
+    not_assigned: '<path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>'
   };
 
   function uuid() {
@@ -139,8 +137,8 @@
     c.textContent = s.text;
   }
 
-  function record(caseId, result, note, photo) {
-    var ctx = { run: ctxBase.run, role: ctxBase.role, device: ctxBase.device, photo: photo || null };
+  function record(caseId, result, note) {
+    var ctx = { run: ctxBase.run, role: ctxBase.role, device: ctxBase.device };
     syncFromDisk();
     L.recordResult(state, ctx, caseId, result, note, uuid, Date.now());
     save();
@@ -176,7 +174,7 @@
     app.innerHTML = "";
     app.appendChild(el("div", { "class": "card notice" }, [
       el("h3", { text: "การเก็บข้อมูลส่วนบุคคล" }),
-      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ ข้อความที่ท่านพิมพ์ ภาพที่ท่านแนบ และชนิดอุปกรณ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ทีมโครงการเท่านั้นที่เห็นชื่อและภาพ ข้อมูลเก็บใน Google ซึ่งอาจอยู่บนเซิร์ฟเวอร์นอกประเทศไทย ข้อความปัญหาที่ไม่มีชื่อผู้ทดสอบจะถูกวิเคราะห์ด้วยผู้ช่วย AI (Claude) เพื่อนำไปแก้ไขระบบ ชื่อและภาพจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ: " + UAT.contact })
+      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ ข้อความที่ท่านพิมพ์ และชนิดอุปกรณ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ทีมโครงการเท่านั้นที่เห็นชื่อ ข้อมูลเก็บใน Google ซึ่งอาจอยู่บนเซิร์ฟเวอร์นอกประเทศไทย ข้อความปัญหาที่ไม่มีชื่อผู้ทดสอบจะถูกวิเคราะห์ด้วยผู้ช่วย AI (Claude) เพื่อนำไปแก้ไขระบบ ชื่อจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ: " + UAT.contact })
     ]));
     var name = el("input", { id: "name", "class": "field", autocomplete: "name", maxlength: "100", value: state.name || "" });
     var dept = el("input", { id: "dept", "class": "field", autocomplete: "organization-title", maxlength: "100", value: state.dept || "" });
@@ -225,14 +223,15 @@
       el("a", { "class": "btn", href: "#/finish", text: "ส่งผลการทดสอบ" })]);
     app.innerHTML = "";
     var p = L.progress(state, UAT, params.role);
+    var open = L.openCases(state, UAT, params.role);
     role.categories.forEach(function (cat) {
       var b = p.byCategory[cat.no];
       app.appendChild(el("div", { "class": "cat", text: "หมวดที่ " + cat.no + " " + cat.name + " (" + b.done + "/" + b.total + ")" }));
       cat.cases.forEach(function (id) {
         var c = UAT.cases[id];
-        app.appendChild(el("a", { "class": "row", href: "#/case/" + id }, [
-          el("span", { "class": "t" }, [el("span", { "class": "id", text: id }), c.title]), tagFor(id)
-        ]));
+        var label = el("span", { "class": "t" }, [el("span", { "class": "id", text: id }), c.title]);
+        if (open.indexOf(id) >= 0) app.appendChild(el("a", { "class": "row", href: "#/case/" + id }, [label, tagFor(id)]));
+        else app.appendChild(el("div", { "class": "row locked", "aria-disabled": "true" }, [label, el("span", { "class": "tag todo", text: "ทำข้อก่อนหน้าก่อน" })]));
       });
     });
   }
@@ -251,7 +250,6 @@
   }
 
   // ---------- finish ----------
-  var finishConfirmed = false;
 
   function renderFinish() {
     renderTop("ส่งผลการทดสอบ");
@@ -259,14 +257,13 @@
     var f = L.finishStatus(state, UAT, params.role);
     var summary = "ทำได้ " + f.ok + " · ทำไม่ได้ " + f.fail + " · ติดปัญหา " + f.blocked +
       (f.not_assigned ? " · ไม่ได้รับมอบหมาย " + f.not_assigned : "");
-    if (f.remaining.length && !finishConfirmed) {
-      setBottom([el("a", { "class": "btn ghost", href: "#/case/" + f.remaining[0], text: "‹ กลับไปทำต่อ" }),
-        el("button", { "class": "btn", type: "button", text: "ส่งเลย", onclick: function () { finishConfirmed = true; sendAll(); } })]);
+    if (f.remaining.length) {
+      setBottom([el("a", { "class": "btn", href: "#/case/" + f.remaining[0], text: "‹ กลับไปทำข้อ " + f.remaining[0] })]);
       var list = el("ul", {});
       f.remaining.forEach(function (rid) { list.appendChild(el("li", { text: rid + " " + UAT.cases[rid].title })); });
       app.appendChild(el("div", { "class": "card warn" }, [
-        el("h2", { text: "ยังไม่ได้ทำ " + f.remaining.length + " ข้อ" }),
-        el("p", { text: "ทำแล้ว " + f.done + " จาก " + f.total + " ข้อ ต้องการส่งผลตอนนี้เลยหรือกลับไปทำต่อ" }), list]));
+        el("h2", { text: "ยังไม่ได้เลือกผล " + f.remaining.length + " ข้อ" }),
+        el("p", { text: "ต้องเลือกผลให้ครบทุกข้อก่อนส่งผลการทดสอบ (ทำแล้ว " + f.done + " จาก " + f.total + " ข้อ)" }), list]));
       return;
     }
     setBottom([el("a", { "class": "btn ghost", href: "#/list", text: "‹ รายการข้อ" })]);
@@ -280,7 +277,6 @@
         el("h2", { text: "ขอบคุณ ส่งผลการทดสอบสำเร็จแล้ว" }),
         el("p", { text: state.name + " · " + role.role_th }),
         el("p", { text: "บันทึกแล้ว " + f.done + " จาก " + f.total + " ข้อ (" + summary + ")" }),
-        f.photoFailed ? el("p", { "class": "error", text: "ส่งผลแล้ว แต่ภาพยังไม่ถึง Drive แจ้งผู้ประสานงาน UAT" }) : null,
         el("p", { "class": "muted", text: "ส่งเมื่อ " + new Date().toLocaleString("th-TH") + " ถ้าต้องการแก้ผลข้อใด กลับไปแก้แล้วกดส่งผลการทดสอบอีกครั้ง" })
       ]));
       return;
@@ -311,28 +307,6 @@
   function closeViewer() { viewer.hidden = true; viewer.innerHTML = ""; }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !viewer.hidden) closeViewer(); });
 
-  // ---------- photo ----------
-  function resizePhoto(file) {
-    return new Promise(function (resolve, reject) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function () {
-        var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
-        var c = document.createElement("canvas");
-        c.width = Math.round(img.width * scale);
-        c.height = Math.round(img.height * scale);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        var data = c.toDataURL("image/jpeg", 0.8);
-        var b64 = data.slice(data.indexOf(",") + 1);
-        if (b64.length * 3 / 4 > 2 * 1024 * 1024) { reject(new Error("ภาพใหญ่เกินไป")); return; }
-        resolve({ mime: "image/jpeg", b64: b64 });
-      };
-      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("เปิดภาพไม่ได้")); };
-      img.src = url;
-    });
-  }
-
   // ---------- case ----------
   function numberedList(items, start) {
     var ol = el("ol", { "class": "num" });
@@ -346,6 +320,10 @@
     var c = UAT.cases[id];
     if (!c || c.role !== params.role) { location.hash = "#/list"; return; }
     if (!state.name) { location.hash = "#/start"; return; }
+    if (L.openCases(state, UAT, params.role).indexOf(id) < 0) {
+      location.hash = "#/case/" + L.firstUnfinished(state, UAT, params.role);
+      return;
+    }
     state.current = id;
     save();
     var ids = L.roleCases(UAT, params.role);
@@ -353,8 +331,18 @@
     var prev = L.prevCase(UAT, params.role, id), next = L.nextCase(UAT, params.role, id);
     setBottom([
       el("a", { "class": "btn ghost", href: prev ? "#/case/" + prev : "#/list", text: prev ? "‹ ก่อนหน้า" : "‹ รายการ" }),
-      el("a", { "class": "btn", href: next ? "#/case/" + next : "#/finish", text: next ? "ข้อถัดไป ›" : "ส่งผลการทดสอบ ›" })
+      el("button", { "class": "btn", type: "button", text: next ? "ข้อถัดไป ›" : "ส่งผลการทดสอบ ›", onclick: function () {
+        if (!L.canAdvance(state, id)) {
+          needResult.textContent = "เลือกผลการทดสอบก่อนไปข้อถัดไป";
+          group.scrollIntoView({ block: "center" });
+          var first = group.querySelector("input");
+          if (first) first.focus();
+          return;
+        }
+        location.hash = next ? "#/case/" + next : "#/finish";
+      } })
     ]);
+    var needResult = el("div", { "class": "error", role: "alert" });
     app.innerHTML = "";
     var head = el("div", { "class": "card" }, [
       el("div", { "class": "muted", text: "ประเภท: " + c.type_th + (c.bp ? " · " + c.bp : "") }),
@@ -392,7 +380,6 @@
     var group = el("div", { "class": "results", role: "radiogroup", "aria-label": "ผลการทดสอบ" });
     var note = el("textarea", { id: "note", "class": "field", maxlength: "2000" });
     note.value = noteVal;
-    var photoBox = el("div", { "class": "photo" });
     L.allowedResults(c).forEach(function (k) {
       var inputId = "r-" + k;
       var input = el("input", { type: "radio", name: "result", id: inputId, value: k });
@@ -401,13 +388,14 @@
         record(id, k, note.value.slice(0, 2000));
         delete state.drafts[id];
         save();
-        updatePhoto();
+        needResult.textContent = "";
         renderTop(id + " · ข้อ " + (ids.indexOf(id) + 1) + " จาก " + ids.length);
       });
       group.appendChild(el("div", { "class": "result " + k }, [input,
         el("label", { "for": inputId, html: svg(k) + "<span>" + L.RESULTS[k] + '<span class="hint">' + HINTS[k] + "</span></span>" })]));
     });
     form.appendChild(group);
+    form.appendChild(needResult);
     form.appendChild(el("label", { "for": "note", text: "สิ่งที่พบ / ปัญหาที่เจอ (ไม่บังคับ)" }));
     form.appendChild(note);
 
@@ -422,38 +410,6 @@
     note.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(saveNote, 1500); });
     note.addEventListener("blur", saveNote);
 
-    var photoMsg = el("div", { "class": "muted", "aria-live": "polite" });
-    if (state.photoFailed && state.photoFailed.indexOf(id) >= 0) {
-      photoMsg.textContent = "ส่งผลแล้ว แต่ภาพยังไม่ถึง Drive แจ้งผู้ประสานงาน UAT";
-    }
-    function onPhoto(input) {
-      var f = input.files && input.files[0];
-      if (!f) return;
-      photoMsg.textContent = "กำลังเตรียมภาพ...";
-      resizePhoto(f).then(function (photo) {
-        var r = state.results[id];
-        record(id, r.result, note.value.slice(0, 2000), photo);
-        photoMsg.textContent = "แนบภาพแล้ว";
-        input.value = "";
-      }, function (e) { photoMsg.textContent = e.message; });
-    }
-    var camera = el("input", { type: "file", id: "photo-camera", accept: "image/*", capture: "environment", "class": "sr-only" });
-    var gallery = el("input", { type: "file", id: "photo-gallery", accept: "image/*", "class": "sr-only" });
-    camera.addEventListener("change", function () { onPhoto(camera); });
-    gallery.addEventListener("change", function () { onPhoto(gallery); });
-    photoBox.appendChild(el("div", { "class": "photo-title", html: svg("camera") + " แนบภาพหน้าจอ (ไม่บังคับ)" }));
-    photoBox.appendChild(el("div", { "class": "muted", text: PHOTO_WARNING }));
-    photoBox.appendChild(el("div", { "class": "photo-buttons" }, [
-      camera, el("label", { "for": "photo-camera", "class": "btn ghost", text: "ถ่ายภาพ" }),
-      gallery, el("label", { "for": "photo-gallery", "class": "btn ghost", text: "เลือกจากคลังภาพ" })
-    ]));
-    photoBox.appendChild(photoMsg);
-    form.appendChild(photoBox);
-    function updatePhoto() {
-      var r = state.results[id];
-      photoBox.hidden = !(r && (r.result === "fail" || r.result === "blocked"));
-    }
-    updatePhoto();
     app.appendChild(form);
   }
 
@@ -466,7 +422,7 @@
     else if (m) renderCase(m[1]);
     else if (h === "#/list") renderList();
     else if (h === "#/info") renderInfo();
-    else if (h === "#/finish") { finishConfirmed = false; renderFinish(); flush(); }
+    else if (h === "#/finish") { renderFinish(); flush(); }
     else if (h === "#/start" || !state.current) renderStart();
     else { location.hash = "#/case/" + state.current; return; }
     window.scrollTo(0, 0);

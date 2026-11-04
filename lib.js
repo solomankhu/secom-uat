@@ -175,6 +175,19 @@
     return p;
   }
 
+  // A case must have a result before the tester may move on.
+  function canAdvance(state, caseId) { return !!state.results[caseId]; }
+
+  // Answered cases plus the first unanswered one; everything after it stays locked until it has a result.
+  function openCases(state, bundle, role) {
+    var ids = roleCases(bundle, role), out = [];
+    for (var i = 0; i < ids.length; i++) {
+      out.push(ids[i]);
+      if (!state.results[ids[i]]) break;
+    }
+    return out;
+  }
+
   // What the final page needs: progress, what is still unsent, and whether everything reached the server.
   function finishStatus(state, bundle, role) {
     var ids = roleCases(bundle, role), out = { done: 0, total: ids.length, remaining: [], pending: state.outbox.length,
@@ -223,7 +236,7 @@
     RESULTS: RESULTS, ROLES: ROLES, allowedResults: allowedResults, parseParams: parseParams,
     newState: newState, createStore: createStore, recordResult: recordResult, roleCases: roleCases,
     progress: progress, nextCase: nextCase, prevCase: prevCase, firstUnfinished: firstUnfinished,
-    flushOutbox: flushOutbox, finishStatus: finishStatus, mergeState: mergeState, backoffMs: backoffMs
+    flushOutbox: flushOutbox, finishStatus: finishStatus, canAdvance: canAdvance, openCases: openCases, mergeState: mergeState, backoffMs: backoffMs
   };
   if (typeof module !== "undefined" && module.exports) module.exports = UATLib;
   else window.UATLib = UATLib;

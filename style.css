@@ -149,3 +149,5 @@ ol.num li { display: flex; gap: 8px; margin: 6px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+.row.locked { color: var(--muted); background: #f8fafc; }
