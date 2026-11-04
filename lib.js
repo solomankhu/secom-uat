@@ -148,7 +148,15 @@
       return Promise.resolve()
         .then(function () { return postFn(sub); })
         .then(function (res) {
-          if (res && res.ok) { removeByRowId(state.outbox, sub.rowId); sent++; return step(); }
+          if (res && res.ok) {
+            removeByRowId(state.outbox, sub.rowId);
+            sent++;
+            if (res.photo_error) {
+              state.photoFailed = state.photoFailed || [];
+              if (state.photoFailed.indexOf(sub.caseId) < 0) state.photoFailed.push(sub.caseId);
+            }
+            return step();
+          }
           var error = (res && res.error) || "rejected";
           if (TRANSIENT.indexOf(error) >= 0) return done({ failed: true, error: error });
           removeByRowId(state.outbox, sub.rowId);
@@ -165,6 +173,19 @@
     var p = step().then(function (r) { if (inflight) inflight.delete(state); return r; });
     if (inflight) inflight.set(state, p);
     return p;
+  }
+
+  // What the final page needs: progress, what is still unsent, and whether everything reached the server.
+  function finishStatus(state, bundle, role) {
+    var ids = roleCases(bundle, role), out = { done: 0, total: ids.length, remaining: [], pending: state.outbox.length,
+      rejected: (state.dead || []).length, photoFailed: (state.photoFailed || []).length,
+      ok: 0, fail: 0, blocked: 0, not_assigned: 0, allSent: false };
+    ids.forEach(function (id) {
+      var r = state.results[id];
+      if (r) { out.done++; out[r.result]++; } else out.remaining.push(id);
+    });
+    out.allSent = out.pending === 0 && out.rejected === 0;
+    return out;
   }
 
   // Merge two copies of one tester's state (two tabs): per case the higher editSeq wins, queues are unioned by rowId.
@@ -188,6 +209,9 @@
     }
     m.outbox = union(a.outbox, b.outbox);
     m.dead = union(a.dead, b.dead);
+    m.photoFailed = (a.photoFailed || []).concat((b.photoFailed || []).filter(function (x) {
+      return (a.photoFailed || []).indexOf(x) < 0;
+    }));
     m.drafts = {};
     [a.drafts || {}, b.drafts || {}].forEach(function (d) { Object.keys(d).forEach(function (k) { m.drafts[k] = d[k]; }); });
     return m;
@@ -199,7 +223,7 @@
     RESULTS: RESULTS, ROLES: ROLES, allowedResults: allowedResults, parseParams: parseParams,
     newState: newState, createStore: createStore, recordResult: recordResult, roleCases: roleCases,
     progress: progress, nextCase: nextCase, prevCase: prevCase, firstUnfinished: firstUnfinished,
-    flushOutbox: flushOutbox, mergeState: mergeState, backoffMs: backoffMs
+    flushOutbox: flushOutbox, finishStatus: finishStatus, mergeState: mergeState, backoffMs: backoffMs
   };
   if (typeof module !== "undefined" && module.exports) module.exports = UATLib;
   else window.UATLib = UATLib;

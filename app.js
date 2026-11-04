@@ -103,9 +103,9 @@
   }
 
   function flush() {
-    if (DEMO || !state.outbox.length) { renderChip(); return; }
+    if (DEMO || !state.outbox.length) { renderChip(); return Promise.resolve({ sent: 0, failed: false }); }
     clearTimeout(sendState.timer);
-    L.flushOutbox(state, post).then(function (res) {
+    return L.flushOutbox(state, post).then(function (res) {
       save();
       sendState.failed = res.failed;
       sendState.error = res.error || "";
@@ -115,6 +115,8 @@
         sendState.attempt = 0;
       }
       renderChip();
+      if (location.hash === "#/finish") renderFinish();
+      return res;
     });
   }
   window.addEventListener("online", flush);
@@ -219,7 +221,8 @@
 
   function renderList() {
     renderTop();
-    setBottom([el("a", { "class": "btn ghost", href: "#/info", text: "คำศัพท์และสิ่งที่ต้องเตรียม" })]);
+    setBottom([el("a", { "class": "btn ghost", href: "#/info", text: "คำศัพท์" }),
+      el("a", { "class": "btn", href: "#/finish", text: "ส่งผลการทดสอบ" })]);
     app.innerHTML = "";
     var p = L.progress(state, UAT, params.role);
     role.categories.forEach(function (cat) {
@@ -245,6 +248,54 @@
     role.glossary.forEach(function (g) { glo.appendChild(el("p", {}, [el("b", { text: g.term + ": " }), g.meaning])); });
     app.appendChild(prep);
     app.appendChild(glo);
+  }
+
+  // ---------- finish ----------
+  var finishConfirmed = false;
+
+  function renderFinish() {
+    renderTop("ส่งผลการทดสอบ");
+    app.innerHTML = "";
+    var f = L.finishStatus(state, UAT, params.role);
+    var summary = "ทำได้ " + f.ok + " · ทำไม่ได้ " + f.fail + " · ติดปัญหา " + f.blocked +
+      (f.not_assigned ? " · ไม่ได้รับมอบหมาย " + f.not_assigned : "");
+    if (f.remaining.length && !finishConfirmed) {
+      setBottom([el("a", { "class": "btn ghost", href: "#/case/" + f.remaining[0], text: "‹ กลับไปทำต่อ" }),
+        el("button", { "class": "btn", type: "button", text: "ส่งเลย", onclick: function () { finishConfirmed = true; sendAll(); } })]);
+      var list = el("ul", {});
+      f.remaining.forEach(function (rid) { list.appendChild(el("li", { text: rid + " " + UAT.cases[rid].title })); });
+      app.appendChild(el("div", { "class": "card warn" }, [
+        el("h2", { text: "ยังไม่ได้ทำ " + f.remaining.length + " ข้อ" }),
+        el("p", { text: "ทำแล้ว " + f.done + " จาก " + f.total + " ข้อ ต้องการส่งผลตอนนี้เลยหรือกลับไปทำต่อ" }), list]));
+      return;
+    }
+    setBottom([el("a", { "class": "btn ghost", href: "#/list", text: "‹ รายการข้อ" })]);
+    if (DEMO) {
+      app.appendChild(el("div", { "class": "card warn" }, [el("h2", { text: "โหมดทดลอง ไม่ส่งผลเข้าชีต" }), el("p", { text: summary })]));
+      return;
+    }
+    if (f.allSent) {
+      app.appendChild(el("div", { "class": "card thanks", role: "status" }, [
+        el("div", { "class": "thanks-icon", html: svg("ok") }),
+        el("h2", { text: "ขอบคุณ ส่งผลการทดสอบสำเร็จแล้ว" }),
+        el("p", { text: state.name + " · " + role.role_th }),
+        el("p", { text: "บันทึกแล้ว " + f.done + " จาก " + f.total + " ข้อ (" + summary + ")" }),
+        f.photoFailed ? el("p", { "class": "error", text: "ส่งผลแล้ว แต่ภาพยังไม่ถึง Drive แจ้งผู้ประสานงาน UAT" }) : null,
+        el("p", { "class": "muted", text: "ส่งเมื่อ " + new Date().toLocaleString("th-TH") + " ถ้าต้องการแก้ผลข้อใด กลับไปแก้แล้วกดส่งผลการทดสอบอีกครั้ง" })
+      ]));
+      return;
+    }
+    var msg = f.rejected
+      ? "มี " + f.rejected + " รายการที่ระบบไม่รับ (" + state.dead[state.dead.length - 1].error + ") แจ้งผู้ประสานงาน UAT"
+      : "กำลังส่ง เหลือ " + f.pending + " รายการ ถ้าเน็ตหลุด ระบบจะส่งให้เองเมื่อกลับมาออนไลน์ อย่าปิดหน้านี้";
+    app.appendChild(el("div", { "class": "card warn", role: "status" }, [el("h2", { text: "ยังส่งไม่ครบ" }), el("p", { text: msg }),
+      el("button", { "class": "btn block", type: "button", text: "ลองส่งอีกครั้ง", onclick: sendAll })]));
+  }
+
+  function sendAll() {
+    sendState.attempt = 0;
+    renderFinish();
+    flush();
   }
 
   // ---------- viewer ----------
@@ -302,7 +353,7 @@
     var prev = L.prevCase(UAT, params.role, id), next = L.nextCase(UAT, params.role, id);
     setBottom([
       el("a", { "class": "btn ghost", href: prev ? "#/case/" + prev : "#/list", text: prev ? "‹ ก่อนหน้า" : "‹ รายการ" }),
-      el("a", { "class": "btn", href: next ? "#/case/" + next : "#/list", text: next ? "ข้อถัดไป ›" : "จบ ดูรายการ ›" })
+      el("a", { "class": "btn", href: next ? "#/case/" + next : "#/finish", text: next ? "ข้อถัดไป ›" : "ส่งผลการทดสอบ ›" })
     ]);
     app.innerHTML = "";
     var head = el("div", { "class": "card" }, [
@@ -371,22 +422,31 @@
     note.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(saveNote, 1500); });
     note.addEventListener("blur", saveNote);
 
-    var file = el("input", { type: "file", id: "photo", accept: "image/*", capture: "environment", "class": "field" });
     var photoMsg = el("div", { "class": "muted", "aria-live": "polite" });
-    file.addEventListener("change", function () {
-      var f = file.files && file.files[0];
+    if (state.photoFailed && state.photoFailed.indexOf(id) >= 0) {
+      photoMsg.textContent = "ส่งผลแล้ว แต่ภาพยังไม่ถึง Drive แจ้งผู้ประสานงาน UAT";
+    }
+    function onPhoto(input) {
+      var f = input.files && input.files[0];
       if (!f) return;
       photoMsg.textContent = "กำลังเตรียมภาพ...";
       resizePhoto(f).then(function (photo) {
         var r = state.results[id];
         record(id, r.result, note.value.slice(0, 2000), photo);
         photoMsg.textContent = "แนบภาพแล้ว";
-        file.value = "";
+        input.value = "";
       }, function (e) { photoMsg.textContent = e.message; });
-    });
-    photoBox.appendChild(el("label", { "for": "photo", html: svg("camera") + " แนบหรือถ่ายภาพหน้าจอ (ไม่บังคับ)" }));
+    }
+    var camera = el("input", { type: "file", id: "photo-camera", accept: "image/*", capture: "environment", "class": "sr-only" });
+    var gallery = el("input", { type: "file", id: "photo-gallery", accept: "image/*", "class": "sr-only" });
+    camera.addEventListener("change", function () { onPhoto(camera); });
+    gallery.addEventListener("change", function () { onPhoto(gallery); });
+    photoBox.appendChild(el("div", { "class": "photo-title", html: svg("camera") + " แนบภาพหน้าจอ (ไม่บังคับ)" }));
     photoBox.appendChild(el("div", { "class": "muted", text: PHOTO_WARNING }));
-    photoBox.appendChild(file);
+    photoBox.appendChild(el("div", { "class": "photo-buttons" }, [
+      camera, el("label", { "for": "photo-camera", "class": "btn ghost", text: "ถ่ายภาพ" }),
+      gallery, el("label", { "for": "photo-gallery", "class": "btn ghost", text: "เลือกจากคลังภาพ" })
+    ]));
     photoBox.appendChild(photoMsg);
     form.appendChild(photoBox);
     function updatePhoto() {
@@ -406,6 +466,7 @@
     else if (m) renderCase(m[1]);
     else if (h === "#/list") renderList();
     else if (h === "#/info") renderInfo();
+    else if (h === "#/finish") { finishConfirmed = false; renderFinish(); flush(); }
     else if (h === "#/start" || !state.current) renderStart();
     else { location.hash = "#/case/" + state.current; return; }
     window.scrollTo(0, 0);

@@ -114,6 +114,16 @@ ol.num li { display: flex; gap: 8px; margin: 6px 0; }
 .hint { font-weight: 400; font-size: 15px; color: var(--muted); display: block; }
 
 .photo { border: 1px dashed var(--muted); border-radius: 12px; padding: 12px; margin-top: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.photo-title { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.photo-buttons { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.photo-buttons .btn { flex: 1; min-width: 140px; }
+.photo-buttons input:focus-visible + label { outline: 3px solid #2563eb; outline-offset: 2px; }
+.thanks { text-align: center; border-color: #bbf7d0; background: var(--ok-bg); }
+.thanks h2 { color: var(--ok); }
+.thanks-icon { width: 56px; height: 56px; margin: 4px auto 8px; border-radius: 50%; background: var(--ok); color: #fff;
+  display: flex; align-items: center; justify-content: center; }
+.thanks-icon svg { width: 32px; height: 32px; }
 .photo img { max-width: 160px; border-radius: 8px; margin-top: 8px; display: block; }
 
 .bottombar {
