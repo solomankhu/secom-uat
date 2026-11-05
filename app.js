@@ -174,17 +174,16 @@
     app.innerHTML = "";
     app.appendChild(el("div", { "class": "card notice" }, [
       el("h3", { text: "การเก็บข้อมูลส่วนบุคคล" }),
-      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ ข้อความที่ท่านพิมพ์ และชนิดอุปกรณ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ทีมโครงการเท่านั้นที่เห็นชื่อ ข้อมูลเก็บใน Google ซึ่งอาจอยู่บนเซิร์ฟเวอร์นอกประเทศไทย ข้อความปัญหาที่ไม่มีชื่อผู้ทดสอบจะถูกวิเคราะห์ด้วยผู้ช่วย AI (Claude) เพื่อนำไปแก้ไขระบบ ชื่อจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ: " + UAT.contact })
+      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ และข้อความที่ท่านพิมพ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ชื่อผู้ทดสอบจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ: " + UAT.contact })
     ]));
     var name = el("input", { id: "name", "class": "field", autocomplete: "name", maxlength: "100", value: state.name || "" });
-    var dept = el("input", { id: "dept", "class": "field", autocomplete: "organization-title", maxlength: "100", value: state.dept || "" });
     var err = el("div", { "class": "error", id: "name-error", "aria-live": "polite" });
     var resume = L.firstUnfinished(state, UAT, params.role);
     var label = state.name && state.current ? "ทำต่อจากข้อ " + state.current : "เริ่มทดสอบ";
     var go = el("button", { "class": "btn block", type: "button", text: label, onclick: function () {
       if (!name.value.trim()) { err.textContent = "กรุณากรอกชื่อ-นามสกุล"; name.setAttribute("aria-invalid", "true"); name.focus(); return; }
       state.name = name.value.trim().slice(0, 100);
-      state.dept = dept.value.trim().slice(0, 100);
+      state.dept = role.role_th; // the department follows the role QR that was scanned
       save();
       var target = "#/case/" + (state.current || resume || L.roleCases(UAT, params.role)[0]);
       if (location.hash === target) route(); else location.hash = target;
@@ -192,10 +191,10 @@
     app.appendChild(el("div", { "class": "card" }, [
       el("h2", { text: "ข้อมูลผู้ทดสอบ" }),
       el("label", { "for": "name", text: "ชื่อ-นามสกุล" }), name, err,
-      el("label", { "for": "dept", text: "ฝ่าย / ตำแหน่ง" }), dept
+      el("div", { "class": "label", text: "ฝ่าย" }), el("div", { "class": "field readonly", text: role.role_th })
     ]));
     app.appendChild(el("div", { "class": "card" }, [
-      el("h3", { text: "บัญชีที่ใช้ทดสอบ" }), el("div", { text: role.account + " (รหัสผ่านตามที่ได้รับ)" }),
+      el("h3", { text: "ก่อนเริ่ม" }), el("div", { text: "ใช้บัญชีทดสอบที่ได้รับมอบหมาย" }),
       el("h3", { text: "ที่อยู่เว็บ" }), el("div", { text: UAT.portal_url }),
       el("p", { "class": "muted", text: role.banner })
     ]));

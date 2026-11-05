@@ -151,3 +151,5 @@ ol.num li { display: flex; gap: 8px; margin: 6px 0; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 
 .row.locked { color: var(--muted); background: #f8fafc; }
+.label { font-weight: 600; margin: 10px 0 4px; }
+.field.readonly { background: #f1f5f9; display: flex; align-items: center; }
