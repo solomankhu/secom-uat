@@ -151,7 +151,7 @@
     var p = L.progress(state, UAT, params.role);
     top.innerHTML = "";
     top.appendChild(el("h1", { text: role.role_th }));
-    top.appendChild(el("div", { "class": "sub", text: (state.name ? state.name + " · " : "") + "ทำแล้ว " + p.done + " / " + p.total + (sub ? " · " + sub : "") }));
+    top.appendChild(el("div", { "class": "sub", text: (state.name ? state.name + " " : "") + "ทำแล้ว " + p.done + " จาก " + p.total + (sub ? " " + sub : "") }));
     var bar = el("div", { "class": "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(p.total), "aria-valuenow": String(p.done) });
     bar.appendChild(el("i", { style: "width:" + Math.round(100 * p.done / Math.max(1, p.total)) + "%" }));
     top.appendChild(bar);
@@ -174,7 +174,7 @@
     app.innerHTML = "";
     app.appendChild(el("div", { "class": "card notice" }, [
       el("h3", { text: "การเก็บข้อมูลส่วนบุคคล" }),
-      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ และข้อความที่ท่านพิมพ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ชื่อผู้ทดสอบจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ: " + UAT.contact })
+      el("p", { "class": "muted", text: UAT.controller + " เก็บชื่อ ฝ่าย ผลการทดสอบ และข้อความที่ท่านพิมพ์ เพื่อบันทึกและติดตามผล UAT เท่านั้น ชื่อผู้ทดสอบจะถูกลบภายในวันที่ " + UAT.purge_date_th + " ติดต่อ " + UAT.contact })
     ]));
     var name = el("input", { id: "name", "class": "field", autocomplete: "name", maxlength: "100", value: state.name || "" });
     var err = el("div", { "class": "error", id: "name-error", "aria-live": "polite" });
@@ -254,8 +254,8 @@
     renderTop("ส่งผลการทดสอบ");
     app.innerHTML = "";
     var f = L.finishStatus(state, UAT, params.role);
-    var summary = "ทำได้ " + f.ok + " · ทำไม่ได้ " + f.fail + " · ติดปัญหา " + f.blocked +
-      (f.not_assigned ? " · ไม่ได้รับมอบหมาย " + f.not_assigned : "");
+    var summary = "ทำได้ " + f.ok + " ทำไม่ได้ " + f.fail + " ติดปัญหา " + f.blocked +
+      (f.not_assigned ? " ไม่ได้รับมอบหมาย " + f.not_assigned : "");
     if (f.remaining.length) {
       setBottom([el("a", { "class": "btn", href: "#/case/" + f.remaining[0], text: "‹ กลับไปทำข้อ " + f.remaining[0] })]);
       var list = el("ul", {});
@@ -274,7 +274,7 @@
       app.appendChild(el("div", { "class": "card thanks", role: "status" }, [
         el("div", { "class": "thanks-icon", html: svg("ok") }),
         el("h2", { text: "ขอบคุณ ส่งผลการทดสอบสำเร็จแล้ว" }),
-        el("p", { text: state.name + " · " + role.role_th }),
+        el("p", { text: state.name + " บทบาท" + role.role_th }),
         el("p", { text: "บันทึกแล้ว " + f.done + " จาก " + f.total + " ข้อ (" + summary + ")" }),
         el("p", { "class": "muted", text: "ส่งเมื่อ " + new Date().toLocaleString("th-TH") + " ถ้าต้องการแก้ผลข้อใด กลับไปแก้แล้วกดส่งผลการทดสอบอีกครั้ง" })
       ]));
@@ -326,7 +326,7 @@
     state.current = id;
     save();
     var ids = L.roleCases(UAT, params.role);
-    renderTop(id + " · ข้อ " + (ids.indexOf(id) + 1) + " จาก " + ids.length);
+    renderTop(id + " ข้อ " + (ids.indexOf(id) + 1) + " จาก " + ids.length);
     var prev = L.prevCase(UAT, params.role, id), next = L.nextCase(UAT, params.role, id);
     setBottom([
       el("a", { "class": "btn ghost", href: prev ? "#/case/" + prev : "#/list", text: prev ? "‹ ก่อนหน้า" : "‹ รายการ" }),
@@ -344,7 +344,7 @@
     var needResult = el("div", { "class": "error", role: "alert" });
     app.innerHTML = "";
     var head = el("div", { "class": "card" }, [
-      el("div", { "class": "muted", text: "ประเภท: " + c.type_th + (c.bp ? " · " + c.bp : "") }),
+      el("div", { "class": "muted", text: "ประเภท " + c.type_th + (c.bp ? " " + c.bp : "") }),
       el("h2", { text: id + " " + c.title })
     ]);
     if (c.gt) head.appendChild(el("span", { "class": "tag gt", text: "ทดสอบต่อเนื่อง " + c.gt.thread + " ขั้น " + c.gt.step + " จาก " + c.gt.of }));
@@ -352,7 +352,7 @@
     var pre = el("div", { "class": "card notice" }, [el("h3", { text: "สิ่งที่ต้องเตรียมก่อน" })]);
     var ul = el("ul", {});
     c.pre.forEach(function (p) { ul.appendChild(el("li", { text: p })); });
-    if (c.data) ul.appendChild(el("li", { text: "ข้อมูลที่ใช้: " + c.data }));
+    if (c.data) ul.appendChild(el("li", { text: "ข้อมูลที่ใช้ " + c.data }));
     pre.appendChild(ul);
     app.appendChild(pre);
     if (c.warning) app.appendChild(el("div", { "class": "card warn" }, [el("h3", { text: "คำเตือน" }), el("div", { text: c.warning })]));
@@ -388,7 +388,7 @@
         delete state.drafts[id];
         save();
         needResult.textContent = "";
-        renderTop(id + " · ข้อ " + (ids.indexOf(id) + 1) + " จาก " + ids.length);
+        renderTop(id + " ข้อ " + (ids.indexOf(id) + 1) + " จาก " + ids.length);
       });
       group.appendChild(el("div", { "class": "result " + k }, [input,
         el("label", { "for": inputId, html: svg(k) + "<span>" + L.RESULTS[k] + '<span class="hint">' + HINTS[k] + "</span></span>" })]));
