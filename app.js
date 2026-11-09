@@ -14,7 +14,7 @@
     ok: "หน้าจอตรงกับ “สิ่งที่ควรเห็นบนหน้าจอ”",
     fail: "ทำครบทุกขั้นแล้วแต่ผลไม่ตรง",
     blocked: "ไปต่อไม่ได้กลางทาง เช่น ระบบค้าง ขึ้นข้อผิดพลาด หรือข้อมูลที่ต้องใช้ยังไม่พร้อม ให้ข้ามไปข้อถัดไป",
-    not_assigned: "ขั้นนี้ของ Golden Thread มีผู้อื่นในบทบาทเดียวกันเป็นผู้ทำ"
+    not_assigned: "ขั้นนี้ของการทดสอบต่อเนื่องมีผู้อื่นในบทบาทเดียวกันเป็นผู้ทำ"
   };
   var ICONS = {
     ok: '<path d="M5 12l4 4 10-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -347,7 +347,7 @@
       el("div", { "class": "muted", text: "ประเภท: " + c.type_th + (c.bp ? " · " + c.bp : "") }),
       el("h2", { text: id + " " + c.title })
     ]);
-    if (c.gt) head.appendChild(el("span", { "class": "tag gt", text: "Golden Thread " + c.gt.thread + " ขั้น " + c.gt.step + " จาก " + c.gt.of }));
+    if (c.gt) head.appendChild(el("span", { "class": "tag gt", text: "ทดสอบต่อเนื่อง " + c.gt.thread + " ขั้น " + c.gt.step + " จาก " + c.gt.of }));
     app.appendChild(head);
     var pre = el("div", { "class": "card notice" }, [el("h3", { text: "สิ่งที่ต้องเตรียมก่อน" })]);
     var ul = el("ul", {});
